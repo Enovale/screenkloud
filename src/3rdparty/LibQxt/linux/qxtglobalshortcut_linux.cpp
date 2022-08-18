@@ -43,7 +43,7 @@ namespace {
 const QVector<quint32> maskModifiers = QVector<quint32>()
     << 0 << Mod2Mask << LockMask << (Mod2Mask | LockMask);
 
-const bool usingWayland = getenv("SCREENCLOUD_WAYLAND");
+const bool usingWayland = getenv("SCREENCLOUD_WAYLAND") && getenv("WAYLAND_DISPLAY");
 
 typedef int (*X11ErrorHandler)(Display *display, XErrorEvent *event);
 
