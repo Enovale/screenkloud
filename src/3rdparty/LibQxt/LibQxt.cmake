@@ -27,8 +27,8 @@ elseif(APPLE)
     )
 else()
     set(screencloud_SOURCES ${screencloud_SOURCES}
-    src/3rdparty/LibQxt/x11/qxtwindowsystem_x11.cpp
-    src/3rdparty/LibQxt/x11/qxtglobalshortcut_x11.cpp
+    src/3rdparty/LibQxt/linux/qxtwindowsystem_linux.cpp
+    src/3rdparty/LibQxt/linux/qxtglobalshortcut_linux.cpp
     )
 endif() 
 
@@ -42,6 +42,14 @@ if(UNIX AND NOT APPLE)
     set(REQUIRED_LIBS ${REQUIRED_LIBS}
       ${X11_LIBRARIES}
     )
+    set(KF_MIN_VERSION "5.88.0")
+    find_package(ECM ${KF_MIN_VERSION} REQUIRED NO_MODULE)
+    set(CMAKE_MODULE_PATH ${ECM_MODULE_PATH})
+    find_package(KF5 ${KF_MIN_VERSION} REQUIRED COMPONENTS GlobalAccel)
+    include_directories(KF5::GlobalAccel)
+    set(REQUIRED_LIBS ${REQUIRED_LIBS}
+            KF5::GlobalAccel
+            )
 elseif(APPLE)
     find_library(CARBON_LIBRARY Carbon)
     set(REQUIRED_LIBS ${REQUIRED_LIBS}

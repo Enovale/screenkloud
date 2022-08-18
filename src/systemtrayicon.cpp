@@ -141,11 +141,11 @@ void SystemTrayIcon::saveSettings()
 }
 void SystemTrayIcon::createGlobalShortcuts()
 {
-    hotkeyFullScreen = new QxtGlobalShortcut(keySqFullScreen, this);
+    hotkeyFullScreen = new QxtGlobalShortcut("Fullscreen", keySqFullScreen, this);
     connect(hotkeyFullScreen, SIGNAL(activated()), this, SLOT(captureFullScreenAction()));
-    hotkeySelection = new QxtGlobalShortcut(keySqSelection, this);
+    hotkeySelection = new QxtGlobalShortcut("Selection", keySqSelection, this);
     connect(hotkeySelection, SIGNAL(activated()), this, SLOT(captureSelectionAction()));
-    hotkeyWindow = new QxtGlobalShortcut(keySqWindow, this);
+    hotkeyWindow = new QxtGlobalShortcut("Window", keySqWindow, this);
     connect(hotkeyWindow, SIGNAL(activated()), this, SLOT(captureWindowAction()));
 }
 

@@ -29,6 +29,9 @@
 ** <http://libqxt.org>  <foundation@libqxt.org>
 *****************************************************************************/
 
+#include <QDebug>
+#include <QAction>
+#include <KGlobalAccel>
 #include <QVector>
 #include <QApplication>
 #include <qpa/qplatformnativeinterface.h>
@@ -39,6 +42,8 @@ namespace {
 
 const QVector<quint32> maskModifiers = QVector<quint32>()
     << 0 << Mod2Mask << LockMask << (Mod2Mask | LockMask);
+
+const bool usingWayland = getenv("SCREENCLOUD_WAYLAND");
 
 typedef int (*X11ErrorHandler)(Display *display, XErrorEvent *event);
 
@@ -195,15 +200,20 @@ quint32 QxtGlobalShortcutPrivate::nativeModifiers(Qt::KeyboardModifiers modifier
 
 quint32 QxtGlobalShortcutPrivate::nativeKeycode(Qt::Key key)
 {
-    QxtX11Data x11;
-    if (!x11.isValid())
-        return 0;
+    if(!usingWayland) {
+        QxtX11Data x11;
+        if (!x11.isValid())
+            return 0;
 
-    KeySym keysym = XStringToKeysym(QKeySequence(key).toString().toLatin1().data());
-    if (keysym == NoSymbol)
-        keysym = static_cast<ushort>(key);
+        KeySym keysym = XStringToKeysym(QKeySequence(key).toString().toLatin1().data());
+        if (keysym == NoSymbol)
+            keysym = static_cast<ushort>(key);
 
-    return XKeysymToKeycode(x11.display(), keysym);
+        return XKeysymToKeycode(x11.display(), keysym);
+    }
+    else {
+        return key;
+    }
 }
 
 bool QxtGlobalShortcutPrivate::registerShortcut(quint32 nativeKey, quint32 nativeMods)
@@ -216,4 +226,64 @@ bool QxtGlobalShortcutPrivate::unregisterShortcut(quint32 nativeKey, quint32 nat
 {
     QxtX11Data x11;
     return x11.isValid() && x11.ungrabKey(nativeKey, nativeMods, x11.rootWindow());
+}
+
+bool QxtGlobalShortcutPrivate::setShortcut(const QKeySequence& shortcut)
+{
+    if(!usingWayland) {
+        Qt::KeyboardModifiers allMods = Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier;
+        key = shortcut.isEmpty() ? Qt::Key(0) : Qt::Key((shortcut[0] ^ allMods) & shortcut[0]);
+        mods = shortcut.isEmpty() ? Qt::KeyboardModifiers(0) : Qt::KeyboardModifiers(shortcut[0] & allMods);
+        const quint32 nativeKey = nativeKeycode(key);
+        const quint32 nativeMods = nativeModifiers(mods);
+        const bool res = registerShortcut(nativeKey, nativeMods);
+        if (res)
+            shortcuts.insert(qMakePair(nativeKey, nativeMods), &qxt_p());
+        else
+            qWarning() << "QxtGlobalShortcut failed to register:" << QKeySequence(key + mods).toString();
+        return res;
+    }
+    else {
+        QxtGlobalShortcut* parent = &qxt_p();
+        auto* action = new QAction(parent);
+        action->setObjectName(name);
+        QObject::connect(action, &QAction::triggered, parent, [parent]() {
+            parent->activated();
+        });
+        return KGlobalAccel::setGlobalShortcut(action, shortcut);
+    }
+}
+
+bool QxtGlobalShortcutPrivate::unsetShortcut()
+{
+    if(!usingWayland) {
+        bool res = false;
+        const quint32 nativeKey = nativeKeycode(key);
+        const quint32 nativeMods = nativeModifiers(mods);
+        if (shortcuts.value(qMakePair(nativeKey, nativeMods)) == &qxt_p())
+            res = unregisterShortcut(nativeKey, nativeMods);
+        if (res)
+            shortcuts.remove(qMakePair(nativeKey, nativeMods));
+        else
+            qWarning() << "QxtGlobalShortcut failed to unregister:" << QKeySequence(key + mods).toString();
+        key = Qt::Key(0);
+        mods = Qt::KeyboardModifiers(0);
+        return res;
+    }
+    else {
+        QxtGlobalShortcut* parent = &qxt_p();
+        auto* action = new QAction(parent);
+        action->setObjectName(name);
+        QObject::connect(action, &QAction::triggered, parent, [parent]() {
+            parent->activated();
+        });
+        KGlobalAccel::self()->removeAllShortcuts(action);
+    }
+}
+
+void QxtGlobalShortcutPrivate::activateShortcut(quint32 nativeKey, quint32 nativeMods)
+{
+    QxtGlobalShortcut* shortcut = shortcuts.value(qMakePair(nativeKey, nativeMods));
+    if (shortcut && shortcut->isEnabled())
+            Q_EMIT shortcut->activated();
 }

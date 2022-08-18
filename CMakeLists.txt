@@ -1,5 +1,5 @@
 project( screencloud )
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.16.0)
 set(VERSION_STRING 1.5.3)
 
 
@@ -256,11 +256,12 @@ endif(APPLE)
 
 
 #Find QuaZip
-find_package(QuaZip REQUIRED)
+find_package(QuaZip-Qt5 REQUIRED)
 include_directories(${QUAZIP_INCLUDE_DIR})
 include_directories(${ZLIB_INCLUDE_DIRS})
 set(REQUIRED_LIBS ${REQUIRED_LIBS}
-  ${QUAZIP_LIBRARY}
+  #${QUAZIP_LIBRARY}
+        QuaZip::QuaZip
 )
 
 #Find Python

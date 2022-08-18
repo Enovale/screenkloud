@@ -46,10 +46,13 @@ class QXT_GUI_EXPORT QxtGlobalShortcut : public QObject
 public:
     explicit QxtGlobalShortcut(QObject* parent = 0);
     explicit QxtGlobalShortcut(const QKeySequence& shortcut, QObject* parent = 0);
+    explicit QxtGlobalShortcut(const QString& name, const QKeySequence& shortcut, QObject* parent = 0);
     virtual ~QxtGlobalShortcut();
 
     QKeySequence shortcut() const;
+    QString name() const;
     bool setShortcut(const QKeySequence& shortcut);
+    void setName(const QString& name);
 
     bool isEnabled() const;
 
